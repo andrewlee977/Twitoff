@@ -25,6 +25,11 @@
       {% for user in users %}
       <p>{{ user.username }}</p>
       {% endfor %}
+
+      <h2>Tweets</h2>
+      {% for tweet in tweets %}
+      <p>{{ tweet.text }}</p>
+      {% endfor %}
       {% endblock %}
     </article>
     <!-- <script src="https://cdn.jsdelivr.net/npm/umbrellajs"/> -->

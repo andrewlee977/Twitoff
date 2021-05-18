@@ -1,7 +1,7 @@
 """Main app/routing file for Twitoff"""
 
 from flask import Flask, render_template
-from .models import DB, User
+from .models import DB, User, Tweet
 
 
 def create_app():
@@ -28,7 +28,12 @@ def create_app():
     def populate():
         insert_users(["elonmusk", "jackblack", "jeffbezos", "brianchesky"])
         users = User.query.all()
-        return render_template("base.html", title="Home", users=users)
+
+        insert_tweets(["We need a carbon tax!", "I'm a comedian", "Blue Origin for the win!",
+                        "I love Airbnb!", "We must colonize Mars", "Hello, world!"], 'elonmusk')
+        tweets = Tweet.query.all()
+
+        return render_template("base.html", title="Home", users=users, tweets=tweets)
 
     return app
 
@@ -37,4 +42,11 @@ def insert_users(usernames):
     for id_index, username in enumerate(usernames):
         user = User(id=id_index, username=username)
         DB.session.add(user)
+        DB.session.commit()
+
+def insert_tweets(tweets, user):
+    userObject = User.query.filter(User.username == user).one()
+    for id_index, tweet in enumerate(tweets):
+        tweet = Tweet(id=id_index, text=tweet, user=userObject)
+        DB.session.add(tweet)
         DB.session.commit()
