@@ -11,7 +11,7 @@ class User(DB.Model):
     id = DB.Column(DB.BigInteger, primary_key=True)
     # username column for 'user'
     username = DB.Column(DB.String, nullable=False)
-    # stores most recent tweet_id
+    # stores most recent tweet_id 
     newest_tweet_id = DB.Column(DB.BigInteger)
 
     def __repr__(self):

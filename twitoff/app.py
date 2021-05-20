@@ -1,7 +1,8 @@
 """Main app/routing file for Twitoff"""
 from os import getenv
-from flask import Flask, render_template
-from .models import DB, User, Tweet
+from twitoff.predict import predict_user
+from flask import Flask, render_template, request
+from .models import DB, User
 from .twitter import add_or_update_user
 
 
@@ -17,16 +18,48 @@ def create_app():
     def root():
         return render_template("base.html", title="Home", users=User.query.all())
 
+    @app.route('/compare', methods=["POST"])
+    def compare():
+        # getting users and hypothetical tweet from client
+        user0, user1 = sorted(
+            [request.values['user0'], request.values['user1']])
+        hypo_tweet_text = request.values["tweet_text"]
+
+        # stops clients from comparing same user
+        if user0 == user1:
+            message = "Cannot compare users to themselves!"
+
+        else:
+            prediction = predict_user(user0, user1, hypo_tweet_text)
+            message = '"{}" is more likely to be said by {} than {}'.format(
+                hypo_tweet_text,
+                user1 if prediction else user0,
+                user0 if prediction else user1
+            )
+
+        return render_template('prediction.html', title='Prediction', message=message)
+
+    @app.route('/user', methods=['POST'])
+    @app.route('/user/<name>', methods=['GET'])
+    def user(name=None, message=''):
+        name = name or request.values["user_name"]
+        try:
+            if request.method == "POST":
+                add_or_update_user(name)
+                message = f"User {name} successfully added!"
+
+            tweets = User.query.filter(User.username == name).one().tweets
+        except Exception as e:
+            message = f"Error adding {name}: {e}"
+            tweets = []
+
+        return render_template("user.html", title=name, tweets=tweets, message=message)
+
     @app.route('/populate')
     def populate():
-        # insert_users(["elonmusk", "jackblack", "jeffbezos", "brianchesky"])
-
-        # insert_tweets(["We need a carbon tax!", "I'm a comedian", "Blue Origin for the win!",
-        #                 "I love Airbnb!", "We must colonize Mars", "Hello, world!"], 'elonmusk')
-        add_or_update_user('elonmusk')
-        add_or_update_user('jackblack')
-
-        return render_template("base.html", title="Home", users=User.query.all(), tweets=Tweet.query.all())
+        add_or_update_user("elonmusk")
+        add_or_update_user("jackblack")
+        return render_template("base.html", title="Home", users=User.query.all())
 
     @app.route('/reset')
     def reset():
@@ -34,6 +67,12 @@ def create_app():
         DB.create_all()
         return render_template("base.html", title="Home", users=User.query.all())
 
+    @app.route('/update')
+    def update():
+        for user in User.query.all():
+            add_or_update_user(user.username)
+
+        return render_template('base.html', title='All users\' tweets were updated!', users=User.query.all())
 
     return app
 
